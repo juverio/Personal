@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventori</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link rel="stylesheet" href="/inventori.css">
+    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+    <script defer src="/inventori.js"></script>
+</head>
+
+<body>
+    <!-- Menu Toggle Button -->
+    <button class="menu-toggle" id="menu-toggle">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <div class="container">
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <div class="logo">
+                <img src="../assets/logo1.jpg" alt="Akurasikas Logo">
+            </div>
+            <nav>
+                <a href="/dashboard">
+                    <i class="fas fa-home"></i>
+                    Dashboard
+                </a>
+                <a href="/type/transaction">
+                    <i class="fas fa-exchange-alt"></i>
+                    Transaksi
+                </a>
+                <a href="/inventori/inventory" class="active">
+                    <i class="fas fa-box"></i>
+                    Inventori
+                </a>
+                <a href="/laporan">
+                    <i class="fas fa-file-alt"></i>
+                    Laporan
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <a href="/help">
+                    <i class="fas fa-question-circle"></i>
+                    Help Center
+                </a>
+                <a href="/settings">
+                    <i class="fas fa-cog"></i>
+                    Pengaturan
+                </a>
+            </div>
+        </div>
+
+        <!-- Sidebar Overlay -->
+        <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Header -->
+            <header>
+                <h2>Inventori</h2>
+                <div class="header-right">
+                    <div class="search">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="search-input" placeholder="Cari Nama atau Kode Barang" value="<%= search || '' %>">
+                    </div>
+                    <i class="fas fa-bell"></i>
+                    <div class="user-profile" id="user-profile">
+                        <img src="/assets/profile-user.png" alt="User Avatar">
+                        <div>
+                            <p class="username">
+                                <%= user.name %>
+                            </p>
+                        </div>
+
+                        <!-- Dropdown Menu -->
+                        <div class="dropdown-menu">
+                            <a href="/user/profile"><i class="fas fa-user"></i> Profil</a>
+                            <a href="/"><i class="fas fa-sign-out-alt"></i> Keluar</a>
+                        </div>
+                    </div>
+                </div>
+            </header>
+            <main>
+                <!-- Inventory Controls -->
+                <div class="inventory-controls">
+                    <div class="date-filter">
+                        <label for="start-date">Dari:</label>
+                        <input type="date" id="start-date" name="startDate" value="<%= startDate || '' %>">
+                        <label for="end-date">Sampai:</label>
+                        <input type="date" id="end-date" name="endDate" value="<%= endDate || '' %>">
+                        <button class="filter-btn">
+                            <i class="fas fa-filter"></i> Filter
+                        </button>
+                    </div>
+                    <div class="table-actions">
+                        <!-- Add this new button -->
+                        <button class="add-item-btn">
+                            <i class="fas fa-plus"></i> Tambah Barang
+                        </button>
+                        <!-- Existing buttons... -->
+                    </div>
+                    <div class="table-actions">
+                        <button class="download-btn" id="export-btn">
+                            <i class="fas fa-file-export"></i> Ekspor
+                        </button>
+                        <button class="bulk-action-btn" id="bulk-delete" disabled>
+                            <i class="fas fa-trash-alt"></i> Hapus (<span id="selected-count">0</span>)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Inventory Summary -->
+                <div class="inventory-summary">
+                    <div class="summary-card new-stock">
+                        <h3>Total Stok Baru</h3>
+                        <p>
+                            <%= totalBaru %>
+                        </p>
+                    </div>
+                    <div class="summary-card old-stock">
+                        <h3>Total Stok Lama</h3>
+                        <p>
+                            <%= totalLama %>
+                        </p>
+                    </div>
+                    <div class="summary-card selected-items">
+                        <h3>Item Terpilih</h3>
+                        <p id="selected-summary">0</p>
+                    </div>
+                </div>
+
+                <!-- Inventory Table -->
+                <div class="inventory-table-container">
+                    <table class="inventory-table">
+                        <thead>
+                            <tr>
+                                <th><input type="checkbox" id="select-all"></th>
+                                <th>Kode</th>
+                                <th>Nama Barang</th>
+                                <th>Bagian</th>
+                                <th>Tanggal Pembelian</th>
+                                <th>Jumlah Stok</th>
+                                <th width="80px">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% if (inventories.length===0) { %>
+                                <tr>
+                                    <td colspan="7" style="text-align: center; padding: 20px;">
+                                        Tidak ada Data Barang
+                                    </td>
+                                </tr>
+                                <% } else { %>
+                                    <% inventories.forEach(item=> { %>
+                                        <tr>
+                                            <td><input type="checkbox" class="row-checkbox"
+                                                    data-id="<%= item.kode_barang %>"></td>
+                                            <td>
+                                                <%= item.kode_barang %>
+                                            </td>
+                                            <td>
+                                                <%= item.nama_barang %>
+                                            </td>
+                                            <td>
+                                                <%= item.bagian %>
+                                            </td>
+                                            <td>
+                                                <%= new Date(item.tanggal_pembelian).toLocaleDateString('id-ID', {
+                                                    day: '2-digit' , month: 'short' , year: 'numeric' }) %>
+                                            </td>
+                                            <td>
+                                                <% if (item.jumlah_stok===0) { %>
+                                                    <span class="stock-badge out-of-stock">0 Pes</span>
+                                                    <% } else if (item.jumlah_stok <=5) { %>
+                                                        <span class="stock-badge out-of-stock">
+                                                            <%= item.jumlah_stok %> Pes
+                                                        </span>
+                                                        <% } else if (item.jumlah_stok <=10) { %>
+                                                            <span class="stock-badge low-stock">
+                                                                <%= item.jumlah_stok %> Pes
+                                                            </span>
+                                                            <% } else { %>
+                                                                <span class="stock-badge in-stock">
+                                                                    <%= item.jumlah_stok %> Pes
+                                                                </span>
+                                                                <% } %>
+
+                                            </td>
+                                            <td>
+                                                <button class="action-btn edit-btn" title="Edit"><i
+                                                        class="fas fa-edit"></i></button>
+                                                <button class="action-btn delete-btn" title="Hapus"><i
+                                                        class="fas fa-trash-alt"></i></button>
+                                            </td>
+                                        </tr>
+                                        <% }); %>
+                                            <% } %>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div class="pagination-container">
+                    <div class="pagination-info">
+                        <% if (totalItems===0) { %>
+                            Menampilkan 0 dari 0 item
+                            <% } else { %>
+                                Menampilkan <span id="showing-from">
+                                    <%= showingFrom %>
+                                </span> -
+                                <span id="showing-to">
+                                    <%= showingTo %>
+                                </span> dari
+                                <span id="total-items">
+                                    <%= totalItems %>
+                                </span> item
+                                <% } %>
+                    </div>
+                    <div class="pagination-controls">
+                        <% for (let i=1; i <=totalPages; i++) { %>
+                            <button class="pagination-btn <%= i === currentPage ? 'active' : '' %>">
+                                <%= i %>
+                            </button>
+                            <% } %>
+                    </div>
+                </div>
+
+                <!-- Modal Konfirmasi Hapus -->
+                <div class="modal" id="confirm-modal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h4>Konfirmasi Penghapusan</h4>
+                            <button class="modal-close">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <p id="confirm-message">Apakah Anda yakin ingin menghapus item terpilih?</p>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-cancel">Batal</button>
+                            <button class="btn btn-confirm">Hapus</button>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-col">
+                <img src="../assets/logo1.jpg" alt="AkurasiKas Logo" class="footer-logo">
+                <p class="footer-text">
+                    Solusi terintegrasi untuk memantau pendapatan, pengeluaran, dan stok barang secara
+                    real-time. Kami
+                    menyediakan manajemen keuangan yang lebih baik dengan data akurat, tanpa kerumitan.
+                </p>
+            </div>
+            <div class="footer-col">
+                <h5 class="footer-text-title">Alamat</h5>
+                <p class="footer-contact">
+                    📍 Jl. Jalan Thamrin No. 140 Medan - 20212
+                </p>
+                <h5 class="footer-text-title">Kontak</h5>
+                <p class="footer-contact">
+                    📞 0812-1234-5678 <br>
+                    📧 cs.akurasi@gmail.com <br>
+                    📷 @akurasi
+                </p>
+            </div>
+            <div class="footer-col">
+                <h5 class="footer-text-title">Perusahaan</h5>
+                <p class="footer-links">
+                    <a href="#">Tentang AkurasiKas</a>
+                    <a href="#">FAQ</a>
+                </p>
+                <h5 class="footer-text-title">Legal</h5>
+                <p class="footer-links">
+                    <a href="#">Privacy Policy</a>
+                    <a href="#">Terms of Service</a>
+                </p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>© 2024 AkurasiKas | Semua Hak Dilindungi</p>
+        </div>
+    </footer>
+    <div id="toast-container"></div>
+</body>
+
+</html>
