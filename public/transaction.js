@@ -1,11 +1,42 @@
 document.addEventListener('DOMContentLoaded', function () {
-    // Sidebar Toggle Functionality
-    const menuToggle = document.getElementById('menu-toggle');
+    // --- EXISTING DOM ELEMENT REFERENCES (CONSOLIDATED/UPDATED) ---
+    const body = document.body;
     const sidebar = document.getElementById('sidebar');
-    const sidebarOverlay = document.getElementById('sidebar-overlay');
+    // Using existing IDs for toggle button and overlay
+    const toggleSidebarBtn = document.getElementById('toggleSidebarBtn'); // Renamed from menu-toggle
+    const sidebarOverlay = document.getElementById('sidebar-overlay'); // If you have an overlay div
 
-    if (menuToggle && sidebar && sidebarOverlay) {
-        menuToggle.addEventListener('click', function () {
+    const profileDropdownBtn = document.getElementById('profileDropdownBtn'); // Assuming this ID exists
+    const profileDropdownMenu = document.getElementById('profileDropdownMenu'); // Assuming this ID exists
+    const logoutLink = document.getElementById('logoutLink'); // Assuming this ID exists
+
+    const transactionTypeDropdownBtn = document.querySelector('.dropdown-toggle'); // Adjusted selector
+    const transactionTypeDropdownMenu = document.querySelector('.dropdown-menu'); // Adjusted selector
+    const transactionTypeLinks = document.querySelectorAll('.dropdown-menu a'); // Adjusted selector
+
+    const filterBtn = document.getElementById('filterBtn'); // Existing button
+    const startDateInput = document.getElementById('startDate'); // Existing input
+    const endDateInput = document.getElementById('endDate'); // Existing input
+
+    const searchInput = document.getElementById('searchInput'); // Assuming this ID exists for the main search
+    const searchBtn = document.getElementById('searchBtn'); // Assuming this ID exists for the search button
+
+    const newTransactionBtn = document.querySelector('.action-buttons .btn-primary'); // Selector for "New Transaction" button
+
+    // --- NEW GLOBAL VARIABLE TO STORE ITEMS FOR THE CURRENT TRANSACTION ---
+    let currentTransactionItems = [];
+
+    // --- REVISED: closeAllDialogs function ---
+    // Why: To ensure all dialogs and their overlays are properly removed and body scrolling is re-enabled.
+    function closeAllDialogs() {
+        const existingDialogOverlays = document.querySelectorAll('.dialog-overlay');
+        existingDialogOverlays.forEach(overlay => overlay.remove()); // Remove all active dialog overlays
+        document.body.style.overflow = ''; // Re-enable scrolling on the body
+    }
+
+    // --- EXISTING SIDEBAR TOGGLE FUNCTIONALITY (ADAPTED TO NEW IDs) ---
+    if (toggleSidebarBtn && sidebar && sidebarOverlay) {
+        toggleSidebarBtn.addEventListener('click', function () {
             sidebar.classList.toggle('active');
             sidebarOverlay.classList.toggle('active');
         });
@@ -16,35 +47,127 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Handle Transaction Type Dropdown
-    const dropdownToggle = document.querySelector('.dropdown-toggle');
-    const dropdownMenu = document.querySelector('.dropdown-menu');
-
-    if (dropdownToggle && dropdownMenu) {
-        dropdownToggle.addEventListener('click', function (e) {
-            e.stopPropagation();
-            dropdownMenu.style.display = dropdownMenu.style.display === 'block' ? 'none' : 'block';
+    // --- EXISTING PROFILE DROPDOWN LOGIC (ADAPTED TO NEW IDs) ---
+    if (profileDropdownBtn && profileDropdownMenu) {
+        profileDropdownBtn.addEventListener('click', (event) => {
+            profileDropdownMenu.classList.toggle('show');
+            event.stopPropagation();
         });
-
-        document.addEventListener('click', function () {
-            dropdownMenu.style.display = 'none';
-        });
-
-        dropdownMenu.addEventListener('click', function (e) {
-            e.stopPropagation();
-        });
-
-        const dropdownOptions = dropdownMenu.querySelectorAll('a');
-        dropdownOptions.forEach(option => {
-            option.addEventListener('click', function () {
-                const selectedText = this.textContent;
-                dropdownToggle.innerHTML = selectedText + ' <i class="fas fa-caret-down"></i>';
-                dropdownMenu.style.display = 'none';
-            });
+        document.addEventListener('click', (event) => {
+            if (!profileDropdownBtn.contains(event.target) && !profileDropdownMenu.contains(event.target)) {
+                profileDropdownMenu.classList.remove('show');
+            }
         });
     }
 
-    // Table Selection Functionality
+    // --- EXISTING LOGOUT LOGIC ---
+    if (logoutLink) {
+        logoutLink.addEventListener('click', async (e) => {
+            e.preventDefault();
+            try {
+                const response = await fetch('/logout', { method: 'POST' });
+                if (response.ok) {
+                    window.location.href = '/login';
+                } else {
+                    alert('Failed to logout.');
+                }
+            } catch (error) {
+                console.error('Error during logout:', error);
+                alert('An error occurred during logout.');
+            }
+        });
+    }
+
+    // --- EXISTING TRANSACTION TYPE DROPDOWN LOGIC (ADAPTED TO NEW IDs) ---
+    if (transactionTypeDropdownBtn && transactionTypeDropdownMenu) {
+        transactionTypeDropdownBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            transactionTypeDropdownMenu.style.display = transactionTypeDropdownMenu.style.display === 'block' ? 'none' : 'block';
+        });
+
+        document.addEventListener('click', function () {
+            transactionTypeDropdownMenu.style.display = 'none';
+        });
+
+        transactionTypeDropdownMenu.addEventListener('click', function (e) {
+            e.stopPropagation();
+        });
+
+        if (transactionTypeLinks.length > 0) {
+            transactionTypeLinks.forEach(link => {
+                link.addEventListener('click', function (event) {
+                    event.preventDefault();
+                    const type = this.getAttribute('data-type');
+                    // This is where the page reloads with the new type query parameter
+                    window.location.href = `/type/transaction?type=${type}`;
+                });
+            });
+        }
+    }
+
+
+    // --- EXISTING DATE FILTER LOGIC ---
+    if (filterBtn && startDateInput && endDateInput) {
+        filterBtn.addEventListener('click', function () {
+            const startDate = startDateInput.value;
+            const endDate = endDateInput.value;
+            const currentUrl = new URL(window.location.href);
+            if (startDate) {
+                currentUrl.searchParams.set('startDate', startDate);
+            } else {
+                currentUrl.searchParams.delete('startDate');
+            }
+            if (endDate) {
+                currentUrl.searchParams.set('endDate', endDate);
+            } else {
+                currentUrl.searchParams.delete('endDate');
+            }
+            window.location.href = currentUrl.toString();
+        });
+    }
+
+    // --- EXISTING SEARCH FUNCTIONALITY ---
+    if (searchBtn && searchInput) { // Ensure both elements exist
+        searchBtn.addEventListener('click', function () {
+            const searchQuery = searchInput.value;
+            const currentUrl = new URL(window.location.href);
+            if (searchQuery) {
+                currentUrl.searchParams.set('search', searchQuery);
+            } else {
+                currentUrl.searchParams.delete('search');
+            }
+            window.location.href = currentUrl.toString();
+        });
+    }
+    // Also re-add keyup for search input if desired (from original)
+    if (searchInput) {
+        searchInput.addEventListener('keyup', function (e) {
+            if (e.key === 'Enter') {
+                const searchTerm = this.value.trim(); // Removed toLowerCase() for exact match if needed
+                const currentUrl = new URL(window.location.href);
+                if (searchTerm.length > 0) {
+                    currentUrl.searchParams.set('search', searchTerm);
+                } else {
+                    currentUrl.searchParams.delete('search');
+                }
+                window.location.href = currentUrl.toString();
+            }
+        });
+    }
+
+    // --- EXISTING PAGINATION FUNCTIONALITY (ADAPTED) ---
+    // Assuming pagination buttons are now handled by backend rendering URLs
+    document.querySelectorAll('.pagination-btn').forEach(button => { // Changed from .pagination-number
+        button.addEventListener('click', function (event) {
+            event.preventDefault();
+            const page = this.getAttribute('data-page'); // Assuming data-page attribute for URL
+            const currentUrl = new URL(window.location.href);
+            currentUrl.searchParams.set('page', page);
+            window.location.href = currentUrl.toString();
+        });
+    });
+
+    // --- EXISTING TABLE SELECTION FUNCTIONALITY ---
     const selectAllCheckbox = document.getElementById('select-all');
     const rowCheckboxes = document.querySelectorAll('.row-checkbox');
 
@@ -82,144 +205,20 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // Calendar input functionality
-    const dateInputs = document.querySelectorAll('.date-input');
-    const calendarIcons = document.querySelectorAll('.date-field i');
-
+    // --- EXISTING CALENDAR INPUT FUNCTIONALITY (ADAPTED) ---
+    // Replaced specific classes/IDs with more generic ones or removed if not directly used
+    // Assuming date inputs are simple HTML5 type="date"
+    const dateInputs = document.querySelectorAll('input[type="date"]'); // Broader selector
     if (dateInputs.length > 0) {
         dateInputs.forEach(input => {
-            // Tambahkan event listener untuk menangani perubahan tanggal
             input.addEventListener('change', function () {
-                const selectedDate = this.value;
-                console.log(`Tanggal dipilih: ${selectedDate}`);
-            });
-        });
-
-        // Make calendar icons clickable
-        if (calendarIcons.length > 0) {
-            calendarIcons.forEach(icon => {
-                icon.addEventListener('click', function () {
-                    const input = this.parentElement.querySelector('.date-input');
-                    if (input) {
-                        input.focus(); // Fokuskan input tanggal
-                        input.showPicker(); // Buka date picker (jika didukung)
-                    }
-                });
-            });
-        }
-    }
-
-    // Pagination functionality
-    const paginationButtons = document.querySelectorAll('.pagination-number');
-    const prevPageArrow = document.querySelector('.pagination-arrow:first-child');
-    const nextPageArrow = document.querySelector('.pagination-arrow:last-child');
-
-    if (paginationButtons.length > 0) {
-        function getCurrentActivePage() {
-            let currentPage = 1;
-            let currentButton = null;
-
-            paginationButtons.forEach((btn, index) => {
-                if (btn.classList.contains('active')) {
-                    currentPage = parseInt(btn.textContent);
-                    currentButton = btn;
-                }
-            });
-
-            return { page: currentPage, button: currentButton };
-        }
-
-        function setActivePage(pageNum) {
-            let targetButton = null;
-
-            paginationButtons.forEach(btn => {
-                const btnPage = parseInt(btn.textContent);
-                if (btnPage === pageNum) {
-                    targetButton = btn;
-                }
-                btn.classList.remove('active');
-            });
-
-            if (targetButton) {
-                targetButton.classList.add('active');
-                console.log(`Navigated to page ${pageNum}`);
-                updateArrowStates(pageNum);
-                return true;
-            }
-
-            return false;
-        }
-
-        function updateArrowStates(currentPage) {
-            const minPage = parseInt(paginationButtons[0].textContent);
-            const maxPage = parseInt(paginationButtons[paginationButtons.length - 1].textContent);
-
-            if (currentPage <= minPage) {
-                prevPageArrow.classList.add('disabled');
-                prevPageArrow.style.opacity = '0.5';
-                prevPageArrow.style.cursor = 'not-allowed';
-            } else {
-                prevPageArrow.classList.remove('disabled');
-                prevPageArrow.style.opacity = '1';
-                prevPageArrow.style.cursor = 'pointer';
-            }
-
-            if (currentPage >= maxPage) {
-                nextPageArrow.classList.add('disabled');
-                nextPageArrow.style.opacity = '0.5';
-                nextPageArrow.style.cursor = 'not-allowed';
-            } else {
-                nextPageArrow.classList.remove('disabled');
-                nextPageArrow.style.opacity = '1';
-                nextPageArrow.style.cursor = 'pointer';
-            }
-        }
-
-        updateArrowStates(getCurrentActivePage().page);
-
-        if (prevPageArrow) {
-            prevPageArrow.addEventListener('click', function () {
-                if (this.classList.contains('disabled')) return;
-
-                const { page } = getCurrentActivePage();
-                setActivePage(page - 1);
-            });
-        }
-
-        if (nextPageArrow) {
-            nextPageArrow.addEventListener('click', function () {
-                if (this.classList.contains('disabled')) return;
-
-                const { page } = getCurrentActivePage();
-                setActivePage(page + 1);
-            });
-        }
-
-        paginationButtons.forEach(btn => {
-            btn.addEventListener('click', function () {
-                const pageNum = parseInt(this.textContent);
-                setActivePage(pageNum);
+                console.log(`Tanggal dipilih: ${this.value}`);
             });
         });
     }
 
-    // Search functionality
-    const searchInput = document.querySelector('.search input');
-
-    if (searchInput) {
-        searchInput.addEventListener('keyup', function (e) {
-            if (e.key === 'Enter') {
-                const searchTerm = this.value.trim().toLowerCase();
-
-                if (searchTerm.length > 0) {
-                    alert(`Searching for: "${searchTerm}". In a real application, this would filter the table.`);
-                }
-            }
-        });
-    }
-
-    // Download button functionality
-    const downloadButton = document.querySelector('.btn-secondary');
+    // --- EXISTING DOWNLOAD BUTTON FUNCTIONALITY ---
+    const downloadButton = document.querySelector('.btn-secondary[title="Unduh"]'); // More specific selector
 
     if (downloadButton) {
         downloadButton.addEventListener('click', function () {
@@ -234,252 +233,359 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // New transaction button functionality
-    const newTransactionButton = document.querySelector('.action-buttons .btn-primary');
-
-    if (newTransactionButton) {
-        newTransactionButton.addEventListener('click', function () {
-            createTransactionDialog(); // Buat dan tampilkan dialog
+    // --- NEW TRANSACTION BUTTON FUNCTIONALITY ---
+    // Why: Ensure `currentTransactionItems` is cleared for a fresh transaction.
+    if (newTransactionBtn) {
+        newTransactionBtn.addEventListener('click', function () {
+            currentTransactionItems = []; // Clear the items array for a new transaction
+            createTransactionDialog(); // Call the function to open the main transaction dialog
         });
     }
 
-    // Fungsi untuk menutup semua dialog yang terbuka
-    function closeAllDialogs() {
-        const existingDialog = document.getElementById('transactionDialog');
-        const existingAddItemDialog = document.getElementById('addItemDialog');
-        const existingOverlay = document.getElementById('dialogOverlay');
+    // --- MODIFIED: createAddItemDialog function ---
+    // Why: To collect item data, add to global array, and re-render main dialog.
+    function createAddItemDialog() {
+        closeAllDialogs(); // Close other dialogs
 
-        if (existingDialog) {
-            document.body.removeChild(existingDialog);
-        }
-        if (existingAddItemDialog) {
-            document.body.removeChild(existingAddItemDialog);
-        }
-        if (existingOverlay) {
-            document.body.removeChild(existingOverlay);
-        }
-    }
-
-    // Fungsi untuk membuat dan menampilkan dialog utama (Input Transaksi)
-    function createTransactionDialog() {
-        closeAllDialogs(); // Tutup semua dialog yang sudah terbuka
-
-        // Buat elemen dialog
-        const dialog = document.createElement('div');
-        dialog.id = 'transactionDialog';
-        dialog.style.position = 'fixed';
-        dialog.style.top = '50%';
-        dialog.style.left = '50%';
-        dialog.style.transform = 'translate(-50%, -50%)';
-        dialog.style.width = '600px';
-        dialog.style.maxHeight = '80vh';
-        dialog.style.overflowY = 'auto';
-        dialog.style.padding = '20px';
-        dialog.style.backgroundColor = '#fff';
-        dialog.style.border = '1px solid #ccc';
-        dialog.style.borderRadius = '8px';
-        dialog.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
-        dialog.style.zIndex = '1000';
-
-        // Tambahkan konten ke dalam dialog
-        dialog.innerHTML = `
-        <h2>Input Transaksi</h2>
-        <div>
-            <label for="inputDate">Tgl. Input Transaksi:</label>
-            <input type="date" id="inputDate" name="inputDate" required>
-        </div>
-        <div>
-            <label for="dueDate">Tgl. Jatuh Tempo:</label>
-            <input type="date" id="dueDate" name="dueDate" required>
-        </div>
-        <div>
-            <label for="invoiceCode">Kode Invoice:</label>
-            <input type="text" id="invoiceCode" name="invoiceCode" required>
-        </div>
-        <div>
-            <label for="docType">Jenis Dok. Transaksi:</label>
-            <input type="text" id="docType" name="docType" required>
-        </div>
-        <div>
-            <label for="supplierName">Nama Supplier/Cust:</label>
-            <input type="text" id="supplierName" name="supplierName" required>
-        </div>
-        <div>
-            <label for="invoiceDate">Tanggal Invoice:</label>
-            <input type="date" id="invoiceDate" name="invoiceDate" required>
-        </div>
-        
-        <!-- Tombol Tambah Barang -->
-        <button type="button" class="btn-primary" id="addItemButton" style="margin-bottom: 16px;">Tambah Barang</button>
-        
-        <!-- Tabel Barang -->
-        <table>
-            <thead>
-                <tr>
-                    <th>No</th>
-                    <th>Kode Barang</th>
-                    <th>Nama Barang</th>
-                    <th>Beginn</th>
-                    <th>Ory</th>
-                    <th>Disc</th>
-                    <th>Harga Satuan</th>
-                    <th>Subtotal</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>1</td>
-                    <td>SKU85003</td>
-                    <td>Pita 1></td>
-                    <td>Pita</td>
-                    <td>Zipos</td>
-                    <td>1%</td>
-                    <td>Rp 16.000</td>
-                    <td>Rp 15.840</td>
-                </tr>
-                <tr>
-                    <td>2</td>
-                    <td>SKU20061</td>
-                    <td>Pita 2</td>
-                    <td>Pita</td>
-                    <td>Tipos</td>
-                    <td>0</td>
-                    <td>Rp 72.000</td>
-                    <td>Rp 72.000</td>
-                </tr>
-                <tr>
-                    <td>3</td>
-                    <td>SKU87861</td>
-                    <td>Kristal 1</td>
-                    <td>Acc</td>
-                    <td>TQba</td>
-                    <td>0</td>
-                    <td>Rp 100.000</td>
-                    <td>Rp 100.000</td>
-                </tr>
-                <tr>
-                    <td>4</td>
-                    <td>SKU71672</td>
-                    <td>Kristal 3</td>
-                    <td>Acc</td>
-                    <td>Topos</td>
-                    <td>1.5%</td>
-                    <td>Rp 80.000</td>
-                    <td>Rp 78.800</td>
-                </tr>
-            </tbody>
-        </table>
-        <div>
-            <h3>Total</h3>
-            <div>
-                <label for="debit">Debit:</label>
-                <input type="text" id="debit" name="debit" value="0">
-            </div>
-            <div>
-                <label for="credit">Kredit:</label>
-                <input type="text" id="credit" name="credit" value="0">
-            </div>
-            <div>
-                <label for="balance">Saldo:</label>
-                <input type="text" id="balance" name="balance" value="0">
-            </div>
-        </div>
-        <div class="dialog-buttons">
-            <button type="button" class="btn-primary" id="saveButton">Simpan</button>
-            <button type="button" class="btn-secondary" id="cancelButton">Batal</button>
-        </div>
-    `;
-
-        // Tambahkan dialog ke dalam body
-        document.body.appendChild(dialog);
-
-        // Tambahkan overlay
         const overlay = document.createElement('div');
-        overlay.id = 'dialogOverlay';
-        overlay.style.position = 'fixed';
-        overlay.style.top = '0';
-        overlay.style.left = '0';
-        overlay.style.width = '100%';
-        overlay.style.height = '100%';
-        overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-        overlay.style.zIndex = '999';
+        overlay.classList.add('dialog-overlay'); // Re-using a generic dialog-overlay class for consistency
+        overlay.innerHTML = `
+            <div class="dialog-content">
+                <h2>Tambah Barang</h2>
+                <form id="addItemForm">
+                    <div>
+                        <label for="itemCode">Kode Barang:</label>
+                        <input type="text" id="itemCode" name="itemCode" required>
+                    </div>
+                    <div>
+                        <label for="itemName">Nama Barang:</label>
+                        <input type="text" id="itemName" name="itemName" required>
+                    </div>
+                    <div>
+                        <label for="itemBeginn">Bagian:</label>
+                        <input type="text" id="itemBeginn" name="itemBeginn">
+                    </div>
+                    <div>
+                        <label for="itemOry">Quantity:</label>
+                        <input type="number" id="itemOry" name="itemOry" min="1" value="1" required>
+                    </div>
+                    <div>
+                        <label for="itemDisc">Diskon (%):</label>
+                        <input type="number" id="itemDisc" name="itemDisc" min="0" value="0">
+                    </div>
+                    <div>
+                        <label for="itemPrice">Harga Satuan:</label>
+                        <input type="number" id="itemPrice" name="itemPrice" min="0" step="0.01" required>
+                    </div>
+                    <div class="dialog-buttons">
+                        <button type="submit" class="btn-primary" id="saveItemButton">Simpan Barang</button>
+                        <button type="button" class="btn-secondary" id="cancelItemButton">Batal</button>
+                    </div>
+                </form>
+            </div>
+        `;
         document.body.appendChild(overlay);
+        document.body.style.overflow = 'hidden'; // Prevent scrolling
 
-        // Tangani klik tombol "Batal"
-        const cancelButton = document.getElementById('cancelButton');
-        cancelButton.addEventListener('click', function () {
-            closeAllDialogs();
+        const saveItemButton = document.getElementById('saveItemButton');
+        const cancelItemButton = document.getElementById('cancelItemButton');
+
+        saveItemButton.addEventListener('click', function (e) {
+            e.preventDefault(); // Prevent default form submission
+
+            const itemCode = document.getElementById('itemCode').value.trim();
+            const itemName = document.getElementById('itemName').value.trim();
+            const itemBeginn = document.getElementById('itemBeginn').value.trim();
+            const itemOry = parseInt(document.getElementById('itemOry').value);
+            const itemDisc = parseFloat(document.getElementById('itemDisc').value) || 0;
+            const itemPrice = parseFloat(document.getElementById('itemPrice').value) || 0;
+
+            // Why: Client-side validation for item inputs
+            if (!itemCode || !itemName || isNaN(itemOry) || itemOry <= 0 || isNaN(itemPrice) || itemPrice < 0) {
+                alert('Harap isi Kode Barang, Nama Barang, Quantity (min 1), dan Harga Satuan (min 0) dengan benar.');
+                return;
+            }
+
+            const subtotal = (itemOry * itemPrice) * (1 - (itemDisc / 100)); // Calculate subtotal with discount
+
+            const newItem = {
+                kode_barang: itemCode,
+                nama_barang: itemName,
+                bagian: itemBeginn,
+                qty: itemOry,
+                disc: itemDisc,
+                harga_satuan: itemPrice,
+                subtotal: subtotal
+            };
+
+            currentTransactionItems.push(newItem); // Why: Add the new item to our temporary array
+            alert('Barang berhasil ditambahkan ke transaksi!');
+            createTransactionDialog(); // Why: Re-open main dialog to show updated item list
         });
 
-        // Tangani klik tombol "Simpan"
+        cancelItemButton.addEventListener('click', function () {
+            createTransactionDialog(); // Go back to the main transaction dialog
+        });
+    }
+
+    // --- MODIFIED: createTransactionDialog function ---
+    // Why: To dynamically display items, calculate totals, and handle save logic.
+    function createTransactionDialog() {
+        closeAllDialogs(); // Close any open dialogs
+
+        const overlay = document.createElement('div');
+        overlay.classList.add('dialog-overlay'); // Re-using generic class
+        
+        // Why: Dynamically generate HTML for the items table based on `currentTransactionItems`
+        let itemsHtml = '';
+        let totalItemsAmount = 0; // Sum of subtotals from currentTransactionItems
+
+        if (currentTransactionItems.length > 0) {
+            currentTransactionItems.forEach((item, index) => {
+                itemsHtml += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${item.kode_barang}</td>
+                        <td>${item.nama_barang}</td>
+                        <td>${item.bagian || '-'}</td>
+                        <td>${item.qty}</td>
+                        <td>${item.disc}%</td>
+                        <td>Rp ${item.harga_satuan.toLocaleString('id-ID')}</td>
+                        <td>Rp ${item.subtotal.toLocaleString('id-ID')}</td>
+                    </tr>
+                `;
+                totalItemsAmount += item.subtotal; // Accumulate total
+            });
+        } else {
+            itemsHtml = '<tr><td colspan="8">Belum ada barang ditambahkan.</td></tr>';
+        }
+
+        overlay.innerHTML = `
+            <div class="dialog-content">
+                <h2>Input Transaksi</h2>
+                <form id="transactionForm">
+                    <div>
+                        <label for="inputDate">Tgl. Input Transaksi:</label>
+                        <input type="date" id="inputDate" name="inputDate" required>
+                    </div>
+                    <div>
+                        <label for="dueDate">Tgl. Jatuh Tempo:</label>
+                        <input type="date" id="dueDate" name="dueDate" required>
+                    </div>
+                    <div>
+                        <label for="invoiceCode">Kode Invoice:</label>
+                        <input type="text" id="invoiceCode" name="invoiceCode" required>
+                    </div>
+                    <div>
+                        <label for="docType">Jenis Dok. Transaksi:</label>
+                        <input type="text" id="docType" name="docType" placeholder="Contoh: Pembelian/Penjualan" required>
+                    </div>
+                    <div>
+                        <label for="supplierName">Nama Supplier/Cust:</label>
+                        <input type="text" id="supplierName" name="supplierName" required>
+                    </div>
+                    <div>
+                        <label for="invoiceDate">Tanggal Invoice:</label>
+                        <input type="date" id="invoiceDate" name="invoiceDate" required>
+                    </div>
+                    
+                    <button type="button" class="btn-primary" id="addItemButton" style="margin-bottom: 16px;">Tambah Barang</button>
+                    
+                    <h3>Daftar Barang</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>No</th>
+                                <th>Kode Barang</th>
+                                <th>Nama Barang</th>
+                                <th>Bagian</th>
+                                <th>Qty</th>
+                                <th>Disc</th>
+                                <th>Harga Satuan</th>
+                                <th>Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${itemsHtml}
+                        </tbody>
+                    </table>
+
+                    <div style="margin-top: 20px;">
+                        <h3>Total Transaksi</h3>
+                        <div>
+                            <label for="debit">Debit (Pemasukan):</label>
+                            <input type="text" id="debit" name="debit" value="${totalItemsAmount.toLocaleString('id-ID')}" readonly>
+                        </div>
+                        <div>
+                            <label for="credit">Kredit (Pengeluaran):</label>
+                            <input type="text" id="credit" name="credit" value="0" readonly>
+                        </div>
+                        <div>
+                            <label for="balance">Saldo:</label>
+                            <input type="text" id="balance" name="balance" value="${totalItemsAmount.toLocaleString('id-ID')}" readonly>
+                        </div>
+                    </div>
+
+                    <div class="dialog-buttons">
+                        <button type="submit" class="btn-primary" id="saveButton">Simpan</button>
+                        <button type="button" class="btn-secondary" id="cancelButton">Batal</button>
+                    </div>
+                </form>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+        document.body.style.overflow = 'hidden'; // Prevent scrolling
+
+        // Re-attach event listeners because dialog.innerHTML overwrites them
+        const addItemButton = document.getElementById('addItemButton');
+        addItemButton.addEventListener('click', createAddItemDialog);
+
+        const cancelButton = document.getElementById('cancelButton');
+        cancelButton.addEventListener('click', closeAllDialogs);
+
         const saveButton = document.getElementById('saveButton');
-        saveButton.addEventListener('click', function () {
-            const supplierName = document.getElementById('supplierName').value;
+        saveButton.addEventListener('click', async function (e) {
+            e.preventDefault(); // Why: Prevent the default form submission behavior
+
+            // --- Collect all form data ---
+            const inputDate = document.getElementById('inputDate').value;
+            const dueDate = document.getElementById('dueDate').value;
+            const invoiceCode = document.getElementById('invoiceCode').value.trim();
+            const docType = document.getElementById('docType').value.trim(); // e.g., "Pembelian", "Penjualan"
+            const supplierName = document.getElementById('supplierName').value.trim();
             const invoiceDate = document.getElementById('invoiceDate').value;
 
-            console.log('Data Transaksi:', {
+            // Why: Determine transaction type for backend logic (cash flow and model type)
+            // Assuming 'Penjualan' leads to 'pemasukan' and 'Pembelian' leads to 'pengeluaran'
+            const jenisTransaksi = docType.toLowerCase().includes('penjualan') ? 'pemasukan' : 'pengeluaran';
+
+            // Why: Use the calculated totalItemsAmount for the transaction's value
+            let finalDebitAmount = 0;
+            let finalCreditAmount = 0;
+            if (jenisTransaksi === 'pemasukan') { // If it's income (e.g., Sale)
+                finalDebitAmount = totalItemsAmount;
+            } else { // If it's an expense (e.g., Purchase)
+                finalCreditAmount = totalItemsAmount;
+            }
+            const finalBalanceAmount = finalDebitAmount - finalCreditAmount;
+
+            // Why: Client-side validation before sending data to server
+            if (!inputDate || !dueDate || !invoiceCode || !docType || !supplierName || !invoiceDate) {
+                alert('Harap isi semua bidang detail transaksi (Tanggal Input, Jatuh Tempo, Kode Invoice, Jenis Dokumen, Nama Supplier/Customer, Tanggal Invoice).');
+                return;
+            }
+
+            if (currentTransactionItems.length === 0) {
+                alert('Harap tambahkan setidaknya satu barang ke transaksi sebelum menyimpan!');
+                return;
+            }
+
+            // Why: Assemble all data into a single object for the POST request
+            const transactionData = {
+                inputDate,
+                dueDate,
+                invoiceCode,
+                docType,
                 supplierName,
-                invoiceDate
-            });
+                invoiceDate,
+                debit: finalDebitAmount,   // Amount for debit side (or income)
+                credit: finalCreditAmount, // Amount for credit side (or expense)
+                balance: finalBalanceAmount,
+                items: currentTransactionItems, // The crucial array of collected item objects
+                jenis_transaksi: jenisTransaksi // 'pemasukan' or 'pengeluaran' for backend logic
+            };
 
-            alert('Transaksi berhasil disimpan!');
-            closeAllDialogs();
+            console.log('Sending transaction data:', transactionData); // For debugging
+
+            try {
+                // Why: Send data to the backend using fetch API
+                const response = await fetch('/type/create', { // This is the new route we'll define
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json' // Tell the server we're sending JSON
+                    },
+                    body: JSON.stringify(transactionData) // Convert JavaScript object to JSON string
+                });
+
+                const result = await response.json(); // Why: Parse the JSON response from the server
+
+                if (response.ok && result.success) { // Why: Check if the request was successful
+                    alert('Transaksi berhasil disimpan!');
+                    closeAllDialogs(); // Why: Close dialog on success
+                    currentTransactionItems = []; // Why: Clear items for next new transaction
+                    location.reload(); // Why: Reload page to display the newly added transaction
+                } else {
+                    // Why: Display error message from the backend if available
+                    alert('Gagal menyimpan transaksi: ' + (result.message || 'Terjadi kesalahan tidak diketahui.'));
+                }
+            } catch (error) {
+                console.error('Error saving transaction:', error); // Log network or other errors
+                alert('Terjadi kesalahan koneksi saat menyimpan transaksi.');
+            }
         });
-
-        // Tangani klik tombol "Tambah Barang"
-        const addItemButton = document.getElementById('addItemButton');
-        addItemButton.addEventListener('click', function () {
-            createAddItemDialog(); // Buat dan tampilkan dialog tambah barang
-        });
-
-        // Fungsi untuk menutup dialog
-        function closeDialog() {
-            document.body.removeChild(dialog);
-            document.body.removeChild(overlay);
-        }
     }
 
-    // Tambahkan styling untuk dialog dan tombol
+    // --- EXISTING GENERAL STYLING INJECTION (keep as is) ---
+    // You might already have these in a .css file, if so, remove these script-injected styles.
     const style = document.createElement('style');
     style.innerHTML = `
-        #transactionDialog h2 {
+        .dialog-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .dialog-content {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            max-width: 600px; /* Adjust as needed */
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative; /* For z-index to work against overlay */
+        }
+        .dialog-content h2 {
             margin-top: 0;
             font-size: 1.5em;
             color: #333;
         }
 
-        #transactionDialog label {
+        .dialog-content label {
             display: block;
             margin-bottom: 8px;
             font-weight: bold;
             color: #555;
         }
 
-        #transactionDialog input {
-            width: 100%;
+        .dialog-content input[type="text"],
+        .dialog-content input[type="number"],
+        .dialog-content input[type="date"] {
+            width: calc(100% - 16px); /* Account for padding */
             padding: 8px;
             margin-bottom: 16px;
             border: 1px solid #ccc;
             border-radius: 4px;
         }
 
-        #transactionDialog table {
+        .dialog-content table {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 16px;
         }
 
-        #transactionDialog table th,
-        #transactionDialog table td {
+        .dialog-content table th,
+        .dialog-content table td {
             border: 1px solid #ccc;
             padding: 8px;
             text-align: left;
-        }
-
-        #transactionDialog table input {
-            width: 100%;
-            border: none;
-            background: transparent;
         }
 
         .dialog-buttons {
@@ -508,181 +614,10 @@ document.addEventListener('DOMContentLoaded', function () {
     `;
     document.head.appendChild(style);
 
-    // Fungsi untuk membuat dan menampilkan dialog tambah barang
-    function createAddItemDialog() {
-        closeAllDialogs(); // Tutup semua dialog yang sudah terbuka
-
-        // Buat elemen dialog
-        const dialog = document.createElement('div');
-        dialog.id = 'addItemDialog';
-        dialog.style.position = 'fixed';
-        dialog.style.top = '50%';
-        dialog.style.left = '50%';
-        dialog.style.transform = 'translate(-50%, -50%)';
-        dialog.style.width = '400px';
-        dialog.style.padding = '20px';
-        dialog.style.maxHeight = '80vh';
-        dialog.style.overflowY = 'auto';
-        dialog.style.backgroundColor = '#fff';
-        dialog.style.border = '1px solid #ccc';
-        dialog.style.borderRadius = '8px';
-        dialog.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
-        dialog.style.zIndex = '1000';
-
-        // Tambahkan konten ke dalam dialog
-        dialog.innerHTML = `
-        <h2>Tambah Barang</h2>
-        <div>
-            <label for="itemCode">Kode Barang:</label>
-            <input type="text" id="itemCode" name="itemCode" required>
-        </div>
-        <div>
-            <label for="itemName">Nama Barang:</label>
-            <input type="text" id="itemName" name="itemName" required>
-        </div>
-        <div>
-            <label for="itemBeginn">Beginn:</label>
-            <input type="text" id="itemBeginn" name="itemBeginn" required>
-        </div>
-        <div>
-            <label for="itemOry">Ory:</label>
-            <input type="text" id="itemOry" name="itemOry" required>
-        </div>
-        <div>
-            <label for="itemDisc">Disc:</label>
-            <input type="text" id="itemDisc" name="itemDisc" required>
-        </div>
-        <div>
-            <label for="itemPrice">Harga Satuan:</label>
-            <input type="text" id="itemPrice" name="itemPrice" required>
-        </div>
-        <div class="dialog-buttons">
-            <button type="button" class="btn-primary" id="saveItemButton">Simpan</button>
-            <button type="button" class="btn-secondary" id="cancelItemButton">Batal</button>
-        </div>
-    `;
-
-        // Tambahkan dialog ke dalam body
-        document.body.appendChild(dialog);
-
-        // Tambahkan overlay
-        const overlay = document.createElement('div');
-        overlay.id = 'dialogOverlay';
-        overlay.style.position = 'fixed';
-        overlay.style.top = '0';
-        overlay.style.left = '0';
-        overlay.style.width = '100%';
-        overlay.style.height = '100%';
-        overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-        overlay.style.zIndex = '999';
-        document.body.appendChild(overlay);
-
-        // Tangani klik tombol "Batal"
-        const cancelItemButton = document.getElementById('cancelItemButton');
-        cancelItemButton.addEventListener('click', function () {
-            createTransactionDialog();
-        });
-
-        // Tangani klik tombol "Simpan"
-        const saveItemButton = document.getElementById('saveItemButton');
-        saveItemButton.addEventListener('click', function () {
-            const itemCode = document.getElementById('itemCode').value;
-            const itemName = document.getElementById('itemName').value;
-            const itemBeginn = document.getElementById('itemBeginn').value;
-            const itemOry = document.getElementById('itemOry').value;
-            const itemDisc = document.getElementById('itemDisc').value;
-            const itemPrice = document.getElementById('itemPrice').value;
-
-            console.log('Barang Baru:', {
-                itemCode,
-                itemName,
-                itemBeginn,
-                itemOry,
-                itemDisc,
-                itemPrice
-            });
-
-            alert('Barang berhasil ditambahkan!');
-            createTransactionDialog();
-        });
-    }
-
-    // Fungsi untuk menutup semua dialog
-    function closeAllDialogs() {
-        const existingDialog = document.getElementById('transactionDialog');
-        const existingAddItemDialog = document.getElementById('addItemDialog');
-        const existingOverlay = document.getElementById('dialogOverlay');
-
-        if (existingDialog) {
-            document.body.removeChild(existingDialog);
-        }
-        if (existingAddItemDialog) {
-            document.body.removeChild(existingAddItemDialog);
-        }
-        if (existingOverlay) {
-            document.body.removeChild(existingOverlay);
-        }
-    }
-
-    // Fungsi untuk menutup dialog tambah barang
-    function closeAddItemDialog() {
-        document.body.removeChild(dialog);
-        document.body.removeChild(overlay);
-    }
-
-
-    // Tambahkan styling untuk dialog tambah barang
-    const style1 = document.createElement('style');
-    style1.innerHTML = `
-        #addItemDialog h2 {
-            margin-top: 0;
-            font-size: 1.5em;
-            color: #333;
-        }
-
-        #addItemDialog label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: bold;
-            color: #555;
-        }
-
-        #addItemDialog input {
-            width: 100%;
-            padding: 8px;
-            margin-bottom: 16px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-
-        .dialog-buttons {
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-            margin-top: 16px;
-        }
-
-        .dialog-buttons button {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        .dialog-buttons .btn-primary {
-            background-color: #007bff;
-            color: #fff;
-        }
-
-        .dialog-buttons .btn-secondary {
-            background-color: #6c757d;
-            color: #fff;
-        }
-    `;
-    document.head.appendChild(style1);
+    // --- OTHER EXISTING FUNCTIONALITIES (Keep as is, mostly unchanged from your original) ---
 
     // Filter button functionality
-    const filterButton = document.querySelector('.btn-icon');
+    const filterButton = document.querySelector('.btn-icon'); // Assuming this refers to the filter dropdown/modal button
 
     if (filterButton) {
         filterButton.addEventListener('click', function () {
@@ -734,7 +669,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Profile Dropdown Functionality
-    const userProfile = document.getElementById('user-profile');
+    const userProfile = document.getElementById('user-profile'); // Make sure this ID exists
 
     if (userProfile) {
         userProfile.addEventListener('click', function (e) {
@@ -742,14 +677,12 @@ document.addEventListener('DOMContentLoaded', function () {
             this.classList.toggle('active');
         });
 
-        // Close dropdown when clicking outside
         document.addEventListener('click', function (e) {
             if (!userProfile.contains(e.target)) {
                 userProfile.classList.remove('active');
             }
         });
 
-        // Prevent dropdown from closing when clicking inside it
         const dropdownMenu = userProfile.querySelector('.profile-dropdown-menu');
         if (dropdownMenu) {
             dropdownMenu.addEventListener('click', function (e) {
@@ -757,4 +690,4 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         }
     }
-});
+}); // End of DOMContentLoaded
