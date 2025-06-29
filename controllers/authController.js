@@ -28,11 +28,13 @@ export const login = async (req, res) => {
     }
 
     req.session.user = {
-      id: user.id,
+      id: user.user_id,
       name: user.name,
       email: user.email,
       role: user.role
     };
+    console.log('Login berhasil. Data sesi:', req.session);
+    console.log('User ID di sesi:', req.session.user.id);
 
     return res.status(200).json({ success: true, message: 'Login berhasil' });
   } catch (err) {
